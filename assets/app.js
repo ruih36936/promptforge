@@ -251,7 +251,7 @@
 
     decide: {
       label: '决策 / 建议', icon: '⚖️',
-      kw: ['要不要', '纠结', '选择', '决策', '该不该', '建议', '值不值', '利弊', '权衡'],
+      kw: ['要不要', '纠结', '选择', '决策', '该不该', '建议', '值不值', '利弊', '权衡', '参谋', '买车', '选哪个', '划算', '换工作'],
       role: '你是一名做过大量真实决策的顾问，习惯先把选项摆平，再明确权衡标准，最后给一个有条件的建议，而不是和稀泥。',
       deliver: '一个能拍板的建议',
       slots: [
@@ -398,16 +398,21 @@
     return Math.round(s);
   }
 
+  /* 命中数相同时按这个顺序优先：越靠前越"专"。
+     writing 故意放最后 —— 「写」这个字几乎每个需求里都有，最容易抢戏。 */
+  var TYPE_ORDER = ['translate', 'code', 'review', 'analyze', 'decide', 'learn', 'office', 'creative', 'writing'];
+
   function detectType(raw) {
-    var best = 'general', bestN = 0, k, t, n, w, i;
-    for (k in TYPES) {
-      if (!Object.prototype.hasOwnProperty.call(TYPES, k)) continue;
+    var best = 'general', bestN = 0, k, t, n, w, i, j;
+    var lower = raw.toLowerCase();
+    for (j = 0; j < TYPE_ORDER.length; j++) {
+      k = TYPE_ORDER[j];
       t = TYPES[k];
-      if (!t.kw || !t.kw.length) continue;
+      if (!t || !t.kw || !t.kw.length) continue;
       n = 0;
       for (i = 0; i < t.kw.length; i++) {
         w = t.kw[i];
-        if (raw.toLowerCase().indexOf(w.toLowerCase()) >= 0) n++;
+        if (lower.indexOf(w.toLowerCase()) >= 0) n++;
       }
       if (n > bestN) { bestN = n; best = k; }
     }
