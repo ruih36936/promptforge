@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>PromptForge · 提示词锻造炉</title>
+<meta name="description" content="把粗糙的想法锻造成结构完整、约束明确、AI 命中率更高的提示词。纯前端、零依赖、可离线使用。" />
+<meta name="theme-color" content="#0e1116" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.95em' font-size='92'>⚒</text></svg>" />
+<link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="logo" aria-hidden="true">⚒</span>
+    <div class="brand-text">
+      <h1>PromptForge <em>提示词锻造炉</em></h1>
+      <p class="tagline">把一句话，锻造成能直接交付的指令</p>
+    </div>
+  </div>
+  <div class="topbar-actions">
+    <button id="btnHelp" class="icon-btn" title="使用说明" aria-label="使用说明">?</button>
+    <button id="btnTheme" class="icon-btn" title="切换深色 / 浅色" aria-label="切换主题">🌙</button>
+  </div>
+</header>
+
+<main class="layout">
+
+  <!-- ============ 左：输入 ============ -->
+  <section class="panel">
+    <div class="panel-head">
+      <h2><b class="step">1</b> 你脑子里的原话</h2>
+      <span class="counter" id="rawCount">0 字</span>
+    </div>
+
+    <textarea id="raw" rows="6" spellcheck="false"
+      placeholder="随便写，不用讲礼貌、不用组织语言。&#10;&#10;例：帮我写个小红书笔记，介绍我们家的护眼台灯&#10;例：这个函数老是报错，帮我看看怎么回事"></textarea>
+
+    <div class="row-actions compact">
+      <button id="btnSample" class="ghost">塞个例子</button>
+      <button id="btnClear" class="ghost">清空</button>
+      <span class="hint">Ctrl / ⌘ + Enter 直接锻造</span>
+    </div>
+
+    <div class="field-grid">
+      <label class="field">
+        <span>任务类型</span>
+        <select id="type"></select>
+      </label>
+      <label class="field">
+        <span>给哪个 AI 用</span>
+        <select id="model"></select>
+      </label>
+      <label class="field">
+        <span>语气</span>
+        <select id="tone"></select>
+      </label>
+      <label class="field">
+        <span>输出详略</span>
+        <select id="detail"></select>
+      </label>
+    </div>
+
+    <div class="switches">
+      <label><input type="checkbox" id="optSelfCheck" checked /><span>加自检清单</span></label>
+      <label><input type="checkbox" id="optAsk" checked /><span>让 AI 先反问</span></label>
+      <label><input type="checkbox" id="optGuard" checked /><span>反编造条款</span></label>
+      <label><input type="checkbox" id="optExample" /><span>留 few-shot 示例位</span></label>
+    </div>
+
+    <button id="btnForge" class="primary big">
+      <span class="hammer">⚒</span> 锻造提示词
+    </button>
+  </section>
+
+  <!-- ============ 右：输出 ============ -->
+  <section class="panel">
+    <div class="panel-head">
+      <h2><b class="step">2</b> 成品提示词</h2>
+      <div class="tabs" role="tablist">
+        <button class="tab active" data-view="pretty">预览</button>
+        <button class="tab" data-view="raw">源码</button>
+      </div>
+    </div>
+
+    <div class="scorebar" id="scorebar" hidden>
+      <div class="score-item">
+        <span class="score-label">原始</span>
+        <span class="score-track"><i class="score-fill before" id="barBefore"></i></span>
+        <span class="score-num" id="numBefore">0</span>
+      </div>
+      <span class="score-arrow">→</span>
+      <div class="score-item">
+        <span class="score-label">锻造后</span>
+        <span class="score-track"><i class="score-fill after" id="barAfter"></i></span>
+        <span class="score-num" id="numAfter">0</span>
+      </div>
+    </div>
+
+    <div class="output-body" id="outputBody">
+      <div class="empty">
+        <div class="empty-icon">⚒</div>
+        <p>左边写点东西，点「锻造提示词」。</p>
+        <p class="small">不用写得规范，越像跟同事随口说，效果越好。</p>
+      </div>
+    </div>
+
+    <div class="row-actions">
+      <button id="btnCopy" class="primary" disabled>复制全文</button>
+      <button id="btnDownload" class="ghost" disabled>下载 .md</button>
+      <button id="btnJson" class="ghost" disabled>导出 .json</button>
+    </div>
+
+    <div id="report" class="report" hidden></div>
+  </section>
+
+</main>
+
+<!-- ============ 模板库 ============ -->
+<section class="panel templates-panel">
+  <div class="panel-head">
+    <h2><b class="step">3</b> 场景模板 <span class="sub">点一下直接填好</span></h2>
+    <input id="tplSearch" class="search" type="search" placeholder="搜索：小红书 / 代码 / 周报 …" />
+  </div>
+  <div class="tpl-grid" id="tplGrid"></div>
+  <p class="tpl-empty" id="tplEmpty" hidden>没找到匹配的模板，换个词试试。</p>
+</section>
+
+<footer class="foot">
+  <span>PromptForge · 纯前端 · 数据不出你的浏览器</span>
+  <span class="dot">·</span>
+  <a href="https://github.com/" id="repoLink" target="_blank" rel="noopener">GitHub</a>
+  <span class="dot">·</span>
+  <span>MIT License</span>
+</footer>
+
+<dialog id="helpDialog" class="dialog">
+  <h3>怎么用（30 秒看完）</h3>
+  <ol class="help-list">
+    <li><b>写原话。</b>左边文本框里，用你平时说话的方式把需求说一遍。不用管格式、不用管礼貌。</li>
+    <li><b>选类型。</b>不确定就选「自动识别」。类型决定要补哪些专业约束。</li>
+    <li><b>选给谁用。</b>Claude 偏爱标签结构，国产模型偏爱直接指令，选对了格式更贴。</li>
+    <li><b>点锻造。</b>右边出成品。带 <span class="mini-missing">[待填写：…]</span> 的地方，是你还没说清的关键信息。</li>
+    <li><b>补一下再复制。</b>切到「源码」可直接改，改完自动同步。补齐后再复制，效果差别很大。</li>
+    <li><b>粘给 AI。</b>整段丢进对话框，前面不要再加「请帮我」之类的客套。</li>
+  </ol>
+  <h3>为什么这样就更准</h3>
+  <p class="help-p">AI 答歪，九成不是它笨，而是缺三样东西：<b>它是谁</b>（角色）、<b>交付什么形状</b>（结构与格式）、<b>什么算不合格</b>（约束与自检）。这个工具按场景把这三样补齐，并逼模型交卷前自查一遍。</p>
+  <h3>它做不到什么</h3>
+  <p class="help-p">它不帮你写内容，也不联网。它是「说明书生成器」——把你想说的话翻译成模型最容易执行的语言。真正的事实信息还得你补进去。</p>
+  <div class="dialog-foot">
+    <button id="btnHelpClose" class="primary">知道了</button>
+  </div>
+</dialog>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script src="assets/app.js"></script>
+</body>
+</html>
