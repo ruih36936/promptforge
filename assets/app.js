@@ -609,10 +609,11 @@
     var slots = compact ? t.slots.slice(0, 2) : t.slots;
     var aiSlots = cfg.aiSlots || {};
     var aiFilled = 0;
+    var aiKeys = [];
     for (var i = 0; i < slots.length; i++) {
       var s = slots[i];
       var v = probeOf(s, raw, e);
-      if (!v && aiSlots[s.ask]) { v = aiSlots[s.ask]; aiFilled++; }
+      if (!v && aiSlots[s.ask]) { v = aiSlots[s.ask]; aiFilled++; aiKeys.push(s.ask); }
       if (v) { found++; } else { missing.push(s.ask); }
       bullets.push('- ' + s.ask + '：' + (v || '（待填写）'));
     }
@@ -687,6 +688,7 @@
       typeKey: typeKey,
       fallback: typeKey === 'auto',
       aiFilled: aiFilled,
+      aiSlotNames: aiKeys,
       typeLabel: TYPES[typeKey].label,
       before: before,
       after: after,
@@ -778,7 +780,9 @@
     for (var i = 0; i < result.reasons.length; i++) html += '<li>' + esc(result.reasons[i]) + '</li>';
     html += '</ul>';
     if (result.aiFilled) {
-      html += '<div class="todo">AI 补全了 ' + result.aiFilled + ' 项。这些是推断值，扫一眼对不对；不对就切到「源码」直接改。</div>';
+      html += '<div class="todo">AI 推断了 ' + result.aiFilled + ' 项（是它猜的，不是你原话里说的）：<br>' +
+              (result.aiSlotNames || []).map(function (n) { return '· ' + esc(n); }).join('<br>') +
+              '<br>扫一眼对不对；不对就切到「源码」直接改，别让错的假设一路传下去。</div>';
     }
     if (result.fallback) {
       html += '<div class="todo">没识别出任务类型，正在用通用模板。手动选一个类型，补充的约束会精准很多。</div>';
