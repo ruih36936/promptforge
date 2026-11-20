@@ -607,9 +607,12 @@
     var missing = [];
     var found = 0;
     var slots = compact ? t.slots.slice(0, 2) : t.slots;
+    var aiSlots = cfg.aiSlots || {};
+    var aiFilled = 0;
     for (var i = 0; i < slots.length; i++) {
       var s = slots[i];
       var v = probeOf(s, raw, e);
+      if (!v && aiSlots[s.ask]) { v = aiSlots[s.ask]; aiFilled++; }
       if (v) { found++; } else { missing.push(s.ask); }
       bullets.push('- ' + s.ask + '：' + (v || '（待填写）'));
     }
@@ -622,6 +625,9 @@
     rules.push(tone.line);
     rules.push(det.line);
     rules.push('输出语言：' + (e.lang && /英文|英语/.test(e.lang) ? '英文' : '中文') + '；第一句就是正文');
+    if (cfg.extraRules && cfg.extraRules.length) {
+      for (var jr = 0; jr < cfg.extraRules.length; jr++) rules.push(cfg.extraRules[jr]);
+    }
     if (cfg.model === 'claude') rules.push('把内容放进 XML 标签里；标签之外不要写任何客套话');
     if (cfg.model === 'deepseek') rules.push('指令保持紧凑，不要解释你的角色设定，不要用花哨排版');
     if (cfg.model === 'local') rules.push('只用短句和短语，避免长段落与复杂嵌套，一次只做一件明确的动作');
@@ -678,6 +684,7 @@
       md: md,
       typeKey: typeKey,
       fallback: typeKey === 'auto',
+      aiFilled: aiFilled,
       typeLabel: TYPES[typeKey].label,
       before: before,
       after: after,
@@ -768,6 +775,9 @@
     var html = '<div class="report-title">为什么这样改更准</div><ul>';
     for (var i = 0; i < result.reasons.length; i++) html += '<li>' + esc(result.reasons[i]) + '</li>';
     html += '</ul>';
+    if (result.aiFilled) {
+      html += '<div class="todo">AI 补全了 ' + result.aiFilled + ' 项。这些是推断值，扫一眼对不对；不对就切到「源码」直接改。</div>';
+    }
     if (result.fallback) {
       html += '<div class="todo">没识别出任务类型，正在用通用模板。手动选一个类型，补充的约束会精准很多。</div>';
     }
@@ -799,6 +809,128 @@
       ta.value = state.md;
       ta.addEventListener('input', function () { state.md = ta.value; });
     }
+  }
+
+  /* ======================= 6.5 AI 增强（可选） ======================= */
+
+  /* 只列实测允许浏览器直连的服务；智谱 BigModel 与本地 Ollama 会被浏览器拦，
+     用户可用「自定义」填自己的中转地址。 */
+  var AI_PROVIDERS = {
+    deepseek:    { label: 'DeepSeek',            base: 'https://api.deepseek.com/chat/completions', model: 'deepseek-chat' },
+    siliconflow: { label: '硅基流动 SiliconFlow', base: 'https://api.siliconflow.cn/v1/chat/completions', model: 'Qwen/Qwen2.5-7B-Instruct' },
+    dashscope:   { label: '阿里百炼（兼容模式）', base: 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', model: 'qwen-plus' },
+    moonshot:    { label: 'Kimi / Moonshot',      base: 'https://api.moonshot.cn/v1/chat/completions', model: 'moonshot-v1-8k' },
+    anthropic:   { label: 'Claude（Anthropic）',  base: 'https://api.anthropic.com/v1/messages', model: 'claude-sonnet-4-20250514', anthropic: true },
+    custom:      { label: '自定义（OpenAI 兼容）', base: '', model: '' }
+  };
+
+  var AI_LS = 'promptforge.ai.v1';
+  var aiCfg = { provider: 'deepseek', base: '', model: '', key: '' };
+
+  function aiLoad() {
+    try {
+      var raw = localStorage.getItem(AI_LS);
+      if (!raw) return;
+      var o = JSON.parse(raw);
+      if (o && o.provider && AI_PROVIDERS[o.provider]) {
+        aiCfg.provider = o.provider;
+        aiCfg.base = o.base || '';
+        aiCfg.model = o.model || '';
+        aiCfg.key = o.key || '';
+      }
+    } catch (e) { /* 忽略 */ }
+  }
+
+  function aiSave() {
+    try { localStorage.setItem(AI_LS, JSON.stringify(aiCfg)); } catch (e) { /* 忽略 */ }
+  }
+
+  function aiBase() { return String(aiCfg.base || AI_PROVIDERS[aiCfg.provider].base || '').trim(); }
+  function aiModel() { return String(aiCfg.model || AI_PROVIDERS[aiCfg.provider].model || '').trim(); }
+  function aiEnabled() { return !!(aiCfg.key && aiCfg.key.trim() && aiBase()); }
+
+  function aiChat(messages, maxTokens) {
+    var p = AI_PROVIDERS[aiCfg.provider] || AI_PROVIDERS.custom;
+    var headers = { 'Content-Type': 'application/json' };
+    var body;
+    if (p.anthropic) {
+      headers['x-api-key'] = aiCfg.key.trim();
+      headers['anthropic-version'] = '2023-06-01';
+      headers['anthropic-dangerous-direct-browser-access'] = 'true';
+      body = { model: aiModel(), max_tokens: maxTokens, temperature: 0.2, messages: messages };
+    } else {
+      headers['Authorization'] = 'Bearer ' + aiCfg.key.trim();
+      body = { model: aiModel(), max_tokens: maxTokens, temperature: 0.2, messages: messages };
+    }
+    return fetch(aiBase(), {
+      method: 'POST', headers: headers, body: JSON.stringify(body)
+    }).then(function (r) {
+      return r.text().then(function (txt) {
+        if (!r.ok) {
+          var msg = '';
+          try { var j = JSON.parse(txt); msg = (j.error && (j.error.message || j.error)) || txt; } catch (e) { msg = txt; }
+          var hint = (r.status === 401 || r.status === 403) ? 'Key 无效或无权限'
+                   : r.status === 429 ? '触发限额，稍后再试或换 Key'
+                   : r.status === 404 ? 'Base URL 或模型名不对'
+                   : r.status >= 500 ? '服务端故障' : '请求被拒';
+          throw new Error(hint + '（HTTP ' + r.status + '）');
+        }
+        var data = JSON.parse(txt);
+        if (p.anthropic) {
+          return (data.content && data.content[0] && data.content[0].text) || '';
+        }
+        return (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || '';
+      });
+    }).catch(function (err) {
+      if (err && err.name === 'AbortError') throw new Error('请求超时');
+      if (err && /Failed to fetch|NetworkError|Load failed|Network request failed/i.test(err.message || '')) {
+        throw new Error('连不上，或该服务不允许浏览器直连（CORS）');
+      }
+      throw err;
+    });
+  }
+
+  function extractJson(text) {
+    if (!text) return null;
+    var t = String(text).replace(/```json/gi, '').replace(/```/g, '').trim();
+    var i = t.indexOf('{'), j = t.lastIndexOf('}');
+    if (i < 0 || j <= i) return null;
+    try { return JSON.parse(t.slice(i, j + 1)); } catch (e) { return null; }
+  }
+
+  /* AI 的职责只有：把槽位填具体 + 给几条场景化约束。结构仍由规则引擎决定。 */
+  function aiComplete(cfg) {
+    var key = cfg.type === 'auto' ? detectType(cfg.raw) : cfg.type;
+    var t = TYPES[key] || TYPES.auto;
+    var askList = t.slots.map(function (s) { return s.ask; });
+    var sys = '你是提示词工程的「槽位补全器」。你唯一的任务是补全信息槽位并给出场景化约束。只输出 JSON，不解释、不寒暄。';
+    var user =
+      '用户原始需求：\n' + cfg.raw.trim() + '\n\n' +
+      '任务类型：' + t.label + '\n' +
+      '需要补全的槽位：\n' + askList.map(function (a, i) { return (i + 1) + '. ' + a; }).join('\n') + '\n\n' +
+      '要求：\n' +
+      '1. 每个槽位给一个最可能的具体值，像用户自己会写的那样，10–40 字，具体、可执行，不要空话；\n' +
+      '2. 推断不出来的槽位，value 填空字符串，不要编造事实；\n' +
+      '3. 再给 2–4 条针对这个具体场景的额外约束（换掉通用套话）；\n' +
+      '4. 只输出这个 JSON，不要代码块包裹：\n' +
+      '{"slots":[{"ask":"槽位原文","value":"补全的值"}],"extraRules":["约束"]}';
+    return [{ role: 'system', content: sys }, { role: 'user', content: user }];
+  }
+
+  function aiApply(json, cfg) {
+    var map = {}, extra = [], i, s;
+    var slots = json.slots || [];
+    for (i = 0; i < slots.length; i++) {
+      s = slots[i];
+      if (s && s.ask && s.value && String(s.value).trim()) map[String(s.ask).trim()] = String(s.value).trim();
+    }
+    var rules = json.extraRules || [];
+    for (i = 0; i < rules.length; i++) {
+      if (rules[i] && String(rules[i]).trim()) extra.push(String(rules[i]).trim());
+    }
+    cfg.aiSlots = map;
+    cfg.extraRules = extra.slice(0, 4);
+    return Object.keys(map).length + cfg.extraRules.length;
   }
 
   /* ======================= 7. 初始化 ======================= */
@@ -872,6 +1004,60 @@
     } catch (err) { /* 忽略损坏数据 */ }
   }
 
+  function aiWire() {
+    aiLoad();
+    var sel = $('#aiProvider');
+    if (!sel) return;
+    var html = '', k;
+    for (k in AI_PROVIDERS) {
+      if (Object.prototype.hasOwnProperty.call(AI_PROVIDERS, k)) {
+        html += '<option value="' + k + '">' + esc(AI_PROVIDERS[k].label) + '</option>';
+      }
+    }
+    sel.innerHTML = html;
+    sel.value = AI_PROVIDERS[aiCfg.provider] ? aiCfg.provider : 'deepseek';
+    $('#aiBase').value = aiCfg.base || '';
+    $('#aiModel').value = aiCfg.model || '';
+    $('#aiKey').value = aiCfg.key || '';
+
+    function upd() {
+      aiCfg.provider = sel.value;
+      aiCfg.base = $('#aiBase').value.trim();
+      aiCfg.model = $('#aiModel').value.trim();
+      aiCfg.key = $('#aiKey').value.trim();
+      aiSave();
+      $('#aiBase').placeholder = AI_PROVIDERS[sel.value].base || 'https://.../v1/chat/completions';
+      $('#aiModel').placeholder = AI_PROVIDERS[sel.value].model || '模型名';
+      aiStatus(aiEnabled() ? 'AI 已启用' : '未配置');
+    }
+
+    [sel, $('#aiBase'), $('#aiModel'), $('#aiKey')].forEach(function (el) {
+      el.addEventListener('input', upd);
+      el.addEventListener('change', upd);
+    });
+    upd();
+
+    $('#btnAiClear').addEventListener('click', function () {
+      $('#aiKey').value = '';
+      upd();
+      toast('已清除 Key');
+    });
+
+    $('#btnAiTest').addEventListener('click', function () {
+      if (!aiEnabled()) { toast('先填 API Key'); return; }
+      var b = this;
+      b.disabled = true;
+      aiStatus('测试中…');
+      aiChat([{ role: 'user', content: '只回复两个字：正常' }], 8).then(function (t) {
+        aiStatus('连接正常');
+        toast('连接正常：' + String(t || '').slice(0, 24));
+      }).catch(function (e) {
+        aiStatus('连接失败');
+        toast('失败：' + ((e && e.message) || e));
+      }).then(function () { b.disabled = false; });
+    });
+  }
+
   function syncExampleBox() {
     var wrap = $('#exampleWrap');
     if (!wrap) return;
@@ -883,13 +1069,7 @@
     $('#rawCount').textContent = n + ' 字';
   }
 
-  function doForge() {
-    var cfg = readCfg();
-    if (!cfg.raw.trim()) {
-      toast('先在左边写点东西');
-      $('#raw').focus();
-      return;
-    }
+  function paintResult(cfg) {
     var result = forge(cfg);
     state.view = 'pretty';
     var tabs = document.querySelectorAll('.tab');
@@ -898,10 +1078,44 @@
     }
     renderOutput(result);
     saveCfg();
-    var out = $('.panel-output') || document.querySelectorAll('.layout .panel')[1];
+    var out = document.querySelectorAll('.layout .panel')[1];
     if (out && window.innerWidth < 900) {
       out.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
+  }
+
+  function aiStatus(txt) {
+    var el = $('#aiStatus');
+    if (el) el.textContent = txt;
+  }
+
+  function doForge() {
+    var cfg = readCfg();
+    if (!cfg.raw.trim()) {
+      toast('先在左边写点东西');
+      $('#raw').focus();
+      return;
+    }
+    if (!aiEnabled()) { paintResult(cfg); return; }
+
+    var btn = $('#btnForge');
+    btn.disabled = true;
+    aiStatus('AI 补全中…');
+    aiChat(aiComplete(cfg), 900).then(function (text) {
+      var json = extractJson(text);
+      if (!json) throw new Error('模型没按 JSON 格式返回，换个模型再试');
+      var n = aiApply(json, cfg);
+      aiStatus('AI 已补全 ' + n + ' 项');
+      if (n) toast('AI 补全 ' + n + ' 项');
+      paintResult(cfg);
+    }).catch(function (err) {
+      aiStatus('AI 失败，已回落规则');
+      toast('AI 出错（已回落规则引擎）：' + ((err && err.message) || err));
+      paintResult(cfg);
+    }).then(function () {
+      btn.disabled = false;
+      setTimeout(function () { aiStatus(aiEnabled() ? 'AI 已启用' : '未配置'); }, 2400);
+    });
   }
 
   function copyAll() {
@@ -960,6 +1174,7 @@
 
     renderTemplates('');
     loadCfg();
+    aiWire();
     countRaw();
     syncExampleBox();
 

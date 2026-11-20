@@ -7,7 +7,7 @@
 <meta name="description" content="把粗糙的想法锻造成结构完整、约束明确、AI 命中率更高的提示词。纯前端、零依赖、可离线使用。" />
 <meta name="theme-color" content="#0e1116" />
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.95em' font-size='92'>⚒</text></svg>" />
-<link rel="stylesheet" href="assets/style.css?v=6" />
+<link rel="stylesheet" href="assets/style.css?v=7" />
 </head>
 <body>
 
@@ -69,6 +69,34 @@
       <label><input type="checkbox" id="optExample" checked /><span>加格式示例</span></label>
       <label><input type="checkbox" id="optCompact" /><span>精简版（更短更稳）</span></label>
     </div>
+
+    <details class="ai-panel" id="aiPanel">
+      <summary>AI 增强（可选）—— 填自己的 Key，让槽位自动补全</summary>
+      <div class="ai-body">
+        <label class="field">
+          <span>服务商</span>
+          <select id="aiProvider"></select>
+        </label>
+        <label class="field">
+          <span>Base URL（留空用默认）</span>
+          <input id="aiBase" class="text-input" spellcheck="false" autocomplete="off" />
+        </label>
+        <label class="field">
+          <span>模型名</span>
+          <input id="aiModel" class="text-input" spellcheck="false" autocomplete="off" />
+        </label>
+        <label class="field">
+          <span>API Key</span>
+          <input id="aiKey" class="text-input" type="password" spellcheck="false" autocomplete="off" />
+        </label>
+        <div class="row-actions compact">
+          <button id="btnAiTest" class="ghost">测试连接</button>
+          <button id="btnAiClear" class="ghost">清除 Key</button>
+          <span class="hint" id="aiStatus">未配置</span>
+        </div>
+        <p class="ai-warn">Key 只存在你这台电脑的浏览器里，只会发给你选的服务商，不经过任何中间服务器。但同页面的脚本能读到它，请用低额度 Key。每次锻造大约花 1–2 千 token。</p>
+      </div>
+    </details>
 
     <div class="example-wrap" id="exampleWrap" hidden>
       <label class="field">
@@ -164,6 +192,6 @@
 
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-<script src="assets/app.js?v=6"></script>
+<script src="assets/app.js?v=7"></script>
 </body>
 </html>
