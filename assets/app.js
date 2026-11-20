@@ -163,7 +163,7 @@
         '每一步都完整写出来，「众所周知」不能代替说明',
         '不要为了通俗而牺牲准确性；两难时先保准确，再补一个类比'
       ],
-      format: '① 一句话说清它是什么 ② 用我熟悉的东西类比 ③ 拆成 3–5 步 ④ 一个具体例子走完整流程 ⑤ 常见误解 ⑥ 3 道自测题（答案折叠到最后）。',
+      format: '① 一句话说清它是什么 ② 用我熟悉的东西类比 ③ 拆成 3–5 步 ④ 一个具体例子走完整流程 ⑤ 常见误解 ⑥ 3 道自测题（答案统一附在最后）。',
       checks: [
         '每一步我都能用自己的话复述出来吗？',
         '有没有哪一步是「跳过去」的？',
@@ -616,7 +616,9 @@
       if (v) { found++; } else { missing.push(s.ask); }
       bullets.push('- ' + s.ask + '：' + (v || '（待填写）'));
     }
-    bullets.push('- 已有材料 / 参考：[把相关资料、数据、链接贴在这里]');
+    bullets.push('- 已有材料 / 参考：' + (aiFilled
+      ? '（没有额外材料，就按上面的信息写）'
+      : '[把相关资料、数据、链接贴在这里]'));
 
     /* ---- 硬性要求 ---- */
     var rules = [];
@@ -642,7 +644,11 @@
                '【' + raw + '】';
     sec.context = bullets.join('\n');
     sec.rules = fmtList(rules);
-    sec.format = t.format + (compact ? '' : '\n\n直接给成品：第一句就是正文，结尾停在成品上。');
+    sec.format = t.format +
+      (cfg.extraRules && cfg.extraRules.length
+        ? '\n\n如果上面的硬性要求和这个结构有冲突，以这个结构的顺序为准，把额外要求融进对应的小节，不要另起章节。'
+        : '') +
+      (compact ? '' : '\n\n直接给成品：第一句就是正文，结尾停在成品上。');
     if (cfg.selfCheck) {
       var checks = compact
         ? t.checks.slice(0, 2).concat(UNIVERSAL_CHECKS.slice(0, 1))
@@ -651,13 +657,9 @@
     }
     if (cfg.guard && !compact) sec.guard = (typeKey === 'writing' || typeKey === 'creative') ? GUARD_SHORT : GUARD_TEXT;
     if (cfg.example && !compact) sec.example = buildExample(typeKey, cfg.exampleText);
-    if (cfg.ask) {
-      if (missing.length) {
-        sec.ask = '我上面有 ' + missing.length + ' 处信息还没填（标了「待填写」）。\n' +
-                  '开始前先用最多 3 个问题向我确认，缺的信息直接问，不要替我假设。';
-      } else {
-        sec.ask = '如果对我的要求有任何理解上的不确定，先用最多 3 个问题确认，不要靠猜开始。';
-      }
+    if (cfg.ask && missing.length) {
+      sec.ask = '我上面有 ' + missing.length + ' 处信息还没填（标了「待填写」）。\n' +
+                '开始前先用最多 3 个问题向我确认，缺的信息直接问，不要替我假设。';
     }
     var reasoning = !!model.reasoning;
     sec.start = reasoning
@@ -899,38 +901,85 @@
   }
 
   /* AI 的职责只有：把槽位填具体 + 给几条场景化约束。结构仍由规则引擎决定。 */
+  /* 规则引擎已经会写死的那批约束（用于去重判断，也用于告诉模型别重复） */
+  function basicRules(cfg) {
+    var key = cfg.type === 'auto' ? detectType(cfg.raw) : cfg.type;
+    var t = TYPES[key] || TYPES.auto;
+    var e = extract(cfg.raw);
+    return t.rules.concat([
+      TONES[cfg.tone].line,
+      DETAILS[cfg.detail].line,
+      '输出语言：' + (e.lang && /英文|英语/.test(e.lang) ? '英文' : '中文') + '；第一句就是正文'
+    ]);
+  }
+
+  function bigrams(str) {
+    var seen = {}, out = [], i, g;
+    for (i = 0; i < str.length - 1; i++) {
+      g = str.slice(i, i + 2);
+      if (!seen[g]) { seen[g] = 1; out.push(g); }
+    }
+    return out;
+  }
+
+  /* 只要两句话在「用词」上高度重合就判定为重复，挡掉换说法的复读 */
+  function alike(a, b) {
+    var A = bigrams(a), B = bigrams(b), set = {}, hit = 0, i;
+    if (!A.length || !B.length) return 0;
+    for (i = 0; i < B.length; i++) set[B[i]] = 1;
+    for (i = 0; i < A.length; i++) if (set[A[i]]) hit++;
+    return (2 * hit) / (A.length + B.length);
+  }
+
   function aiComplete(cfg) {
     var key = cfg.type === 'auto' ? detectType(cfg.raw) : cfg.type;
     var t = TYPES[key] || TYPES.auto;
     var askList = t.slots.map(function (s) { return s.ask; });
-    var sys = '你是提示词工程的「槽位补全器」。你唯一的任务是补全信息槽位并给出场景化约束。只输出 JSON，不解释、不寒暄。';
+    var existing = basicRules(cfg);
+    var sys = '你是提示词工程的「槽位补全器」。你只补信息，不重复已有约束。只输出 JSON，不解释、不寒暄。';
     var user =
       '用户原始需求：\n' + cfg.raw.trim() + '\n\n' +
       '任务类型：' + t.label + '\n' +
       '需要补全的槽位：\n' + askList.map(function (a, i) { return (i + 1) + '. ' + a; }).join('\n') + '\n\n' +
+      '这套模板里【已经存在】的约束（你补充的内容不得与它们重复，也不要换个说法再说一遍）：\n' +
+      existing.map(function (r) { return '- ' + r; }).join('\n') + '\n\n' +
+      '最终答案要按照这个结构输出：' + t.format + '\n\n' +
       '要求：\n' +
-      '1. 每个槽位给一个最可能的具体值，像用户自己会写的那样，10–40 字，具体、可执行，不要空话；\n' +
-      '2. 推断不出来的槽位，value 填空字符串，不要编造事实；\n' +
-      '3. 再给 2–4 条针对这个具体场景的额外约束（换掉通用套话）；\n' +
+      '1. 每个槽位给一个最可能的具体值，像用户自己会写的那样，10–40 字，具体、可执行；\n' +
+      '2. 推断不出来的槽位，value 填空字符串；禁止编造数字、标准号、报告名、人名；\n' +
+      '3. 最多再补 3 条【上面没有的】场景化约束，每条都必须能落到最终答案里；宁可少给，不要凑数；\n' +
       '4. 只输出这个 JSON，不要代码块包裹：\n' +
       '{"slots":[{"ask":"槽位原文","value":"补全的值"}],"extraRules":["约束"]}';
     return [{ role: 'system', content: sys }, { role: 'user', content: user }];
   }
 
-  function aiApply(json, cfg) {
-    var map = {}, extra = [], i, s;
+  function aiApply(json, cfg, existingRules) {
+    var base = existingRules || [], map = {}, extra = [], i, j, s, r, dup;
     var slots = json.slots || [];
     for (i = 0; i < slots.length; i++) {
       s = slots[i];
       if (s && s.ask && s.value && String(s.value).trim()) map[String(s.ask).trim()] = String(s.value).trim();
     }
-    var rules = json.extraRules || [];
-    for (i = 0; i < rules.length; i++) {
-      if (rules[i] && String(rules[i]).trim()) extra.push(String(rules[i]).trim());
+    var cand = json.extraRules || [];
+    for (i = 0; i < cand.length; i++) {
+      r = String(cand[i] || '').trim();
+      if (!r) continue;
+      dup = false;
+      for (j = 0; j < base.length; j++) {
+        if (alike(r, base[j]) >= 0.16) { dup = true; break; }
+      }
+      if (!dup) {
+        for (j = 0; j < extra.length; j++) {
+          if (alike(r, extra[j]) >= 0.30) { dup = true; break; }
+        }
+      }
+      if (dup) continue;
+      extra.push(r);
+      if (extra.length >= 3) break;
     }
     cfg.aiSlots = map;
-    cfg.extraRules = extra.slice(0, 4);
-    return Object.keys(map).length + cfg.extraRules.length;
+    cfg.extraRules = extra;
+    return Object.keys(map).length + extra.length;
   }
 
   /* ======================= 7. 初始化 ======================= */
@@ -1104,7 +1153,7 @@
     aiChat(aiComplete(cfg), 900).then(function (text) {
       var json = extractJson(text);
       if (!json) throw new Error('模型没按 JSON 格式返回，换个模型再试');
-      var n = aiApply(json, cfg);
+      var n = aiApply(json, cfg, basicRules(cfg));
       aiStatus('AI 已补全 ' + n + ' 项');
       if (n) toast('AI 补全 ' + n + ' 项');
       paintResult(cfg);
