@@ -112,6 +112,9 @@ GitHub Pages 发布的是 `gh-pages` 分支。仓库里带了 `.github/workflows
 git add -A && git commit -m "改了什么" && git push
 ```
 
+> **每次改动后，把 `index.html` 里两处 `?v=4` 的数字 +1**（改成 `?v=5`）。
+> GitHub Pages 的静态资源会缓存 10 分钟，不升版本号的话，你自己或朋友会看到旧版，误以为没改成功。
+
 ### 如果你 fork 一份自己用
 
 1. 仓库 → **Settings** → 左侧 **Pages**
