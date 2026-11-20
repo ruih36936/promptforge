@@ -17,6 +17,7 @@
     claude:   { label: 'Claude',                    style: 'xml' },
     deepseek: { label: 'DeepSeek',                  style: 'md'  },
     gemini:   { label: 'Gemini',                    style: 'md'  },
+    reasoning:{ label: '推理模型（o 系列 / R1 / QwQ）', style: 'md', reasoning: true },
     local:    { label: '本地小模型（Qwen / Llama）', style: 'md' }
   };
 
@@ -65,10 +66,10 @@
         { k: 'points', ask: '必须出现的卖点或信息点' }
       ],
       rules: [
-        '开头 3 句内必须让读者觉得「这跟我有关」，禁止先铺垫背景再进正题',
+        '开头 3 句内就说出读者最关心的那件事，第一句直接进入正题',
         '每个观点必须落到具体场景、数字或案例；出现一个形容词，就要配一个证据',
         '禁用词：赋能、闭环、抓手、颠覆、极致、震撼、YYDS、家人们、宝子们',
-        '单段不超过 4 行，长句拆短句；不用「首先 / 其次 / 最后」这类作文腔',
+        '单段不超过 4 行，长句拆成短句；段落之间靠逻辑推进，不用「首先 / 其次 / 最后」',
         '不使用任何未经确认的参数、价格、认证、用户量'
       ],
       format: '按「钩子 → 痛点 → 方案 → 证据 → 行动」五段推进，每段一个小标题；正文之后单独给 3 个备选标题（分别偏点击 / 偏搜索 / 偏共鸣）。',
@@ -96,9 +97,9 @@
       ],
       rules: [
         '先在开头一句话确认你的假设（环境、版本、数据结构）；不确定的假设必须标出来',
-        '不得引入我没提到的第三方依赖，能用标准库就用标准库',
+        '只用标准库，以及我在需求里明确提到的依赖',
         '必须显式处理边界：空值、类型错误、超长输入、异常、超时',
-        '给出可以直接复制运行的完整代码，禁止「此处省略」「其余同上」',
+        '给出可以直接复制运行的完整代码，每一段都完整写出来',
         '说明时间 / 空间复杂度，以及这个方案的已知短板'
       ],
       format: '输出 4 段：① 我的理解与假设 ② 方案与取舍理由 ③ 完整代码（关键处有注释）④ 如何验证 + 已知风险。',
@@ -124,9 +125,9 @@
         { k: 'stake', ask: '这个结论会被用来做什么决定' }
       ],
       rules: [
-        '把「已知事实 / 合理推断 / 个人判断」三类分开标注，不许混在一起说',
+        '把「已知事实 / 合理推断 / 个人判断」三类分开标注',
         '每给出一个结论，必须同时给出至少一个反例或反面证据',
-        '不得编造数据、出处、调研结论；查不到就写「无公开数据」',
+        '数据只来自我给的材料；查不到就写「无公开数据」',
         '结论必须给置信度（高 / 中 / 低）和成立条件',
         '区分相关性和因果性，凡是因果推断必须说明机制'
       ],
@@ -155,7 +156,7 @@
         '先用我已经会的东西做类比，再上定义；不许一上来就甩术语',
         '每讲一个抽象概念，必须配一个生活化例子 + 一个反例',
         '明确列出新手最容易搞错的 3 个地方',
-        '不许用「简单来说」「众所周知」跳过关键步骤',
+        '每一步都完整写出来，「众所周知」不能代替说明',
         '不要为了通俗而牺牲准确性；两难时先保准确，再补一个类比'
       ],
       format: '① 一句话说清它是什么 ② 用我熟悉的东西类比 ③ 拆成 3–5 步 ④ 一个具体例子走完整流程 ⑤ 常见误解 ⑥ 3 道自测题（答案折叠到最后）。',
@@ -182,7 +183,7 @@
       rules: [
         '优先保证目标语言读者读起来自然，允许调整语序，但不许增删信息',
         '专业术语必须统一，首次出现时给「译名（原文）」',
-        '不得意译掉限定条件、否定、数字、单位、时态',
+        '限定条件、否定、数字、单位、时态必须与原文一一对应',
         '专有名词、代码、型号保持原样不翻译',
         '原文有歧义时，选择语义最保守的一种译法，并在备注里说明'
       ],
@@ -209,9 +210,9 @@
       rules: [
         '先给数量再谈质量：方案之间必须方向明显不同',
         '每个方案必须说明「它靠什么打动人」，不能只有一个名字',
-        '禁止把同一个想法换 5 种说法充数',
+        '方案之间在「靠什么打动人」上必须不同',
         '至少有一个方案是反常识的，并说明它的风险',
-        '不许出现「结合线上线下」「打造闭环生态」这类空话'
+        '每个方案都要能说清具体动作、成本和由谁执行'
       ],
       format: '① 各个方案（每个：一句话概念 / 目标人群 / 为什么有效 / 风险）② 挑 2 个最值得做的并说明理由 ③ 如果只有一周时间，先做哪个。',
       checks: [
@@ -237,7 +238,7 @@
         '严格按我给的结构输出，不要自行增加章节',
         '所有信息必须来自我给的材料；缺失的标「待确认」，绝不许编',
         '能用表格 / 清单就不用大段叙述，优先让人扫读',
-        '不写「在领导的关怀下」这类空话，直接给事实和结论'
+        '只写事实、数据和结论'
       ],
       format: '按「结论 → 关键数据 → 待办与责任人 → 风险」顺序输出；能用表格就用表格。',
       checks: [
@@ -264,7 +265,7 @@
         '明确指出权衡维度并按重要性排序，不要平均打分',
         '必须说明「在什么情况下，推荐会反过来」',
         '给出可逆性判断：这个决定做错了能不能改回来',
-        '最后必须给一个明确倾向，不许「各有优劣，看你」'
+        '最后给一个明确倾向，而不是把选择推回给我'
       ],
       format: '① 一句话建议 ② 选项对比表（维度 × 选项）③ 关键假设（假设错了结论就变）④ 最坏情况与止损线 ⑤ 第一步该做什么。',
       checks: [
@@ -288,9 +289,9 @@
       ],
       rules: [
         '按严重程度分级：致命 / 重要 / 建议，每条必须指出具体位置和原因',
-        '不许说「整体不错」这类空话；确实没问题就写「未发现问题」',
+        '每条结论都指到具体位置；确实没问题就写「未发现问题」',
         '每条问题必须给出可直接替换的改法，不能只说「建议优化」',
-        '不许为了凑数编造问题',
+        '只报真实存在的问题，没有就直说',
         '先给结论：能不能直接发／能不能上线'
       ],
       format: '表格输出：位置 | 问题 | 严重程度 | 怎么改；表格之后给「如果只改 3 处，改哪 3 处」。',
@@ -332,6 +333,9 @@
     '是否严格按约定结构输出，没有自行加章节、加开场白、加结尾寒暄？',
     '把这份答案交给一个挑剔的同行，他会最先挑哪一处毛病？先改掉它'
   ];
+
+  var GUARD_SHORT =
+    '不确定的参数、价格、认证、用户量，一律标注「待确认」，不要写成确定事实。';
 
   var GUARD_TEXT =
     '遇到不确定的信息，明确写「不确定」，并说明需要什么才能确定。\n' +
@@ -489,13 +493,15 @@
     var tone = TONES[cfg.tone] || TONES.pro;
     var det = DETAILS[cfg.detail] || DETAILS.normal;
     var e = extract(raw);
+    var compact = !!cfg.compact;
 
     /* ---- 背景槽位 ---- */
     var bullets = [];
     var missing = [];
     var found = 0;
-    for (var i = 0; i < t.slots.length; i++) {
-      var s = t.slots[i];
+    var slots = compact ? t.slots.slice(0, 2) : t.slots;
+    for (var i = 0; i < slots.length; i++) {
+      var s = slots[i];
       var v = probeOf(s, raw, e);
       if (v) { found++; } else { missing.push(s.ask); }
       bullets.push('- ' + s.ask + '：' + (v || '（待填写）'));
@@ -504,14 +510,16 @@
 
     /* ---- 硬性要求 ---- */
     var rules = [];
-    for (var j = 0; j < t.rules.length; j++) rules.push(t.rules[j]);
+    var typeRules = compact ? t.rules.slice(0, 3) : t.rules;
+    for (var j = 0; j < typeRules.length; j++) rules.push(typeRules[j]);
     rules.push(tone.line);
     rules.push(det.line);
-    rules.push('输出语言：' + (e.lang && /英文|英语/.test(e.lang) ? '英文' : '中文') + '；所有内容直接进入正题，不要寒暄');
+    rules.push('输出语言：' + (e.lang && /英文|英语/.test(e.lang) ? '英文' : '中文') + '；第一句就是正文');
     if (cfg.model === 'claude') rules.push('把内容放进 XML 标签里；标签之外不要写任何客套话');
     if (cfg.model === 'deepseek') rules.push('指令保持紧凑，不要解释你的角色设定，不要用花哨排版');
     if (cfg.model === 'local') rules.push('只用短句和短语，避免长段落与复杂嵌套，一次只做一件明确的动作');
     if (cfg.model === 'gemini') rules.push('关键步骤用编号列出，方便我逐步核对');
+    if (cfg.model === 'reasoning') rules.push('结论与依据分开写，依据按重要性排序，长度服从内容需要')
 
     /* ---- 各段 ---- */
     var sec = {};
@@ -521,25 +529,30 @@
                '【' + raw + '】';
     sec.context = bullets.join('\n');
     sec.rules = fmtList(rules);
-    sec.format = t.format + '\n\n直接给成品。不要写「好的，我来帮你……」这类开场白；结尾不要问我「还需要什么吗」。';
+    sec.format = t.format + (compact ? '' : '\n\n直接给成品：第一句就是正文，结尾停在成品上。');
     if (cfg.selfCheck) {
-      sec.selfcheck = '输出前逐条核对，任一条不通过就自己重写，不要把不合格的版本发给我：\n' +
-                      fmtList(t.checks.concat(UNIVERSAL_CHECKS));
+      var checks = compact
+        ? t.checks.slice(0, 2).concat(UNIVERSAL_CHECKS.slice(0, 1))
+        : t.checks.concat(UNIVERSAL_CHECKS);
+      sec.selfcheck = '输出前逐条核对，任一条不通过就自己重写：\n' + fmtList(checks);
     }
-    if (cfg.guard) sec.guard = GUARD_TEXT;
-    if (cfg.example) {
+    if (cfg.guard && !compact) sec.guard = (typeKey === 'writing' || typeKey === 'creative') ? GUARD_SHORT : GUARD_TEXT;
+    if (cfg.example && !compact) {
       sec.example = '【输入示例】\n（贴一个你满意的例子）\n\n【期望输出】\n（贴对应的输出）\n\n' +
                     '请模仿上例的判断标准和表达密度，但不要照抄具体内容。';
     }
     if (cfg.ask) {
       if (missing.length) {
         sec.ask = '我上面有 ' + missing.length + ' 处信息还没填（标了「待填写」）。\n' +
-                  '请先在开头列出最多 3 个最关键的问题向我确认，不要猜、不要编；等我回答后再开始写。';
+                  '开始前先用最多 3 个问题向我确认，缺的信息直接问，不要替我假设。';
       } else {
         sec.ask = '如果对我的要求有任何理解上的不确定，先用最多 3 个问题确认，不要靠猜开始。';
       }
     }
-    sec.start = '现在开始。第一步用一句话复述你对任务的理解（只复述，不展开）；第二步直接交付成品。';
+    var reasoning = !!model.reasoning;
+    sec.start = reasoning
+      ? '直接开始：第一句给结论，之后只给支撑结论的关键依据。'
+      : '第一步用一句话复述你对任务的理解（只复述，不展开）；第二步直接交付成品。';
 
     var md = renderPrompt(sec, model.style);
 
@@ -560,6 +573,7 @@
     return {
       md: md,
       typeKey: typeKey,
+      fallback: typeKey === 'auto',
       typeLabel: TYPES[typeKey].label,
       before: before,
       after: after,
@@ -650,6 +664,9 @@
     var html = '<div class="report-title">为什么这样改更准</div><ul>';
     for (var i = 0; i < result.reasons.length; i++) html += '<li>' + esc(result.reasons[i]) + '</li>';
     html += '</ul>';
+    if (result.fallback) {
+      html += '<div class="todo">没识别出任务类型，正在用通用模板。手动选一个类型，补充的约束会精准很多。</div>';
+    }
     if (result.missing.length) {
       html += '<div class="todo">还有 ' + result.missing.length + ' 处没填，补齐后效果差别很大：<br>' +
               result.missing.map(function (m) { return '· ' + esc(m); }).join('<br>') + '</div>';
@@ -718,7 +735,8 @@
       selfCheck: $('#optSelfCheck').checked,
       ask: $('#optAsk').checked,
       guard: $('#optGuard').checked,
-      example: $('#optExample').checked
+      example: $('#optExample').checked,
+      compact: $('#optCompact').checked
     };
   }
 
@@ -744,6 +762,7 @@
       if (typeof c.ask === 'boolean') $('#optAsk').checked = c.ask;
       if (typeof c.guard === 'boolean') $('#optGuard').checked = c.guard;
       if (typeof c.example === 'boolean') $('#optExample').checked = c.example;
+      if (typeof c.compact === 'boolean') $('#optCompact').checked = c.compact;
     } catch (err) { /* 忽略损坏数据 */ }
   }
 
