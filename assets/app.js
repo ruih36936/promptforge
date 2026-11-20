@@ -737,7 +737,7 @@
   /* ======================= 6. 状态 ======================= */
 
   var state = { md: '', view: 'pretty', result: null };
-  var LS_KEY = 'promptforge.last';
+  var LS_KEY = 'promptforge.last.v2';
 
   function toast(msg) {
     var el = $('#toast');
