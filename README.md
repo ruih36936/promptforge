@@ -33,7 +33,9 @@ PromptForge 做的事只有一件：**把这个猜测的过程变成填空**。
 
 ### 方式一：直接打开网址（推荐）
 
-部署到 GitHub Pages 后，任何人点开链接就能用，手机也行。
+**https://ruih36936.github.io/promptforge/**
+
+点开就能用，手机也行。不需要注册、不需要装任何东西。
 
 ### 方式二：本地双击
 
@@ -96,15 +98,26 @@ promptforge/
 
 ---
 
-## 部署到 GitHub Pages（一次配好，以后自动更新）
+## 部署说明（已经配好，不用再动）
 
-1. 把仓库推到 GitHub（`main` 分支）。
-2. 打开仓库 → **Settings** → 左侧 **Pages**。
-3. **Source** 选 `Deploy from a branch`。
-4. **Branch** 选 `main`，目录选 `/ (root)`，点 **Save**。
-5. 等 1–2 分钟，访问 `https://ruih36936.github.io/promptforge/`。
+线上地址：**https://ruih36936.github.io/promptforge/**
 
-之后每次 `git push`，网站自动更新。不需要 CI，不需要构建。
+GitHub Pages 发布的是 `gh-pages` 分支。仓库里带了 `.github/workflows/deploy.yml`：每次 push 到 `main`，会自动把内容同步到 `gh-pages`，大约 1 分钟线上更新。
+
+所以日常只有一件事：
+
+```bash
+git add -A && git commit -m "改了什么" && git push
+```
+
+### 如果你 fork 一份自己用
+
+1. 仓库 → **Settings** → 左侧 **Pages**
+2. **Source** 选 `Deploy from a branch`，分支选 `gh-pages`，目录 `/ (root)`，Save
+3. 推一次 `main`（工作流会把内容同步到 `gh-pages`），等 1–2 分钟
+4. 地址变成 `https://<你的用户名>.github.io/promptforge/`
+
+> 首次部署时 `gh-pages` 分支要存在，Pages 才会自动出现在设置里；本仓库已经有了。
 
 ---
 
