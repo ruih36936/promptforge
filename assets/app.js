@@ -9,7 +9,7 @@
 
   /* ======================= 1. 配置数据 ======================= */
 
-  var REPO_URL = ''; // 部署后填你的仓库地址，例如 'https://github.com/you/promptforge'
+  var REPO_URL = 'https://github.com/ruih36936/promptforge'; // 页脚 GitHub 链接
 
   var MODELS = {
     generic:  { label: '通用（Kimi / 豆包 / 通义）', style: 'md'  },

@@ -44,7 +44,7 @@ PromptForge 做的事只有一件：**把这个猜测的过程变成填空**。
 ### 方式三：自己跑
 
 ```bash
-git clone https://github.com/<你的用户名>/promptforge.git
+git clone https://github.com/ruih36936/promptforge.git
 cd promptforge
 # 直接双击 index.html，或者起个本地服务：
 python -m http.server 8000
@@ -102,7 +102,7 @@ promptforge/
 2. 打开仓库 → **Settings** → 左侧 **Pages**。
 3. **Source** 选 `Deploy from a branch`。
 4. **Branch** 选 `main`，目录选 `/ (root)`，点 **Save**。
-5. 等 1–2 分钟，访问 `https://<你的用户名>.github.io/promptforge/`。
+5. 等 1–2 分钟，访问 `https://ruih36936.github.io/promptforge/`。
 
 之后每次 `git push`，网站自动更新。不需要 CI，不需要构建。
 
