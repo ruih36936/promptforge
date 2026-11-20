@@ -336,6 +336,95 @@
     { id: 'name',  icon: '🏷️', name: '取名 / slogan', desc: '好记、不土、能注册',      type: 'creative',  tags: '取名 名字 slogan 品牌', raw: '帮我给一个卖手工皂的品牌想 10 个名字，要求好记、不土' }
   ];
 
+  /* 每类内置的「输出骨架示例」：只教结构与颗粒度，不提供可抄的内容 */
+  var EXAMPLES = {
+    writing:
+      '【输入】帮我写个卖保温杯的文案\n' +
+      '【输出骨架】\n' +
+      '标题：一个杯子，让你少喝 3 杯奶茶（利益前置，不喊口号）\n' +
+      '钩子：下午三点犯困的那一刻，你缺的不是咖啡\n' +
+      '痛点：外卖杯越喝越贵，凉了还得再买一杯\n' +
+      '方案：316 钢内胆 + 6 小时保温，装一次喝一天\n' +
+      '证据：实测 8:00 装水，14:00 还有 61℃\n' +
+      '行动：想看价格的，评论区扣「1」',
+    code:
+      '【输入】把一堆乱码日期统一成 YYYY-MM-DD\n' +
+      '【输出骨架】\n' +
+      '① 假设：输入是字符串数组，可能出现 2024/3/5、20240305、5 Mar 2024\n' +
+      '② 方案：正则分组优先，datetime 兜底，解析失败抛明确异常\n' +
+      '③ 代码：完整函数 + 3 条断言，复制即可运行\n' +
+      '④ 验证：pytest 直接跑；风险：无时区信息时按本地时区处理',
+    analyze:
+      '【输入】为什么 8 月销量掉了 20%\n' +
+      '【输出骨架】\n' +
+      '结论：不是需求塌了，是渠道结构变了（置信度：中）\n' +
+      '依据：线上 +12%，线下 -38%；线下占比 62% → 48%\n' +
+      '反方：天气和竞品促销也说得通，但解释不了线上逆势上涨\n' +
+      '成立条件：口径一致、无大客户流失\n' +
+      '还缺：分区域的日粒度数据',
+    learn:
+      '【输入】什么是向量数据库\n' +
+      '【输出骨架】\n' +
+      '一句话：它是「按意思找东西」的数据库，不是按关键词找\n' +
+      '类比：像拿一张照片去找相似照片，而不是按文件名搜\n' +
+      '步骤：向量化 → 建索引 → 近邻查询（三步走完一个例子）\n' +
+      '常见误解：以为它能替代关系型数据库（其实只擅长相似检索）\n' +
+      '自测：为什么返回的是「最像」，而不是「完全匹配」？',
+    translate:
+      '【输入】把产品说明翻成中文\n' +
+      '【输出骨架】\n' +
+      '译文：……（完整一段，读起来像中文原生表达）\n' +
+      '术语对照：Auto-scaling = 自动扩缩容；Throughput = 吞吐量\n' +
+      '调整说明：① 英文被动改主动 ② 长定语拆成两句 ③ 单位保持原样',
+    creative:
+      '【输入】给健身房想拉新点子\n' +
+      '【输出骨架】\n' +
+      '方案 1：私教课拆成 99 元体验包｜有效原因：降低首次决策门槛｜风险：被当薅羊毛\n' +
+      '方案 2：和楼下便利店换券｜有效原因：共享人流｜风险：换量不对等\n' +
+      '方案 3（反常识）：开业前 30 天免费，但要带一个人｜有效原因：强制社交裂变｜风险：成本前置\n' +
+      '推荐：先做方案 1，一周能验证｜只有一周时间就先投这一条',
+    office:
+      '【输入】把本周记录整理成周报\n' +
+      '【输出骨架】\n' +
+      '结论：本周上线 2 项、卡住 1 项\n' +
+      '| 事项 | 进展 | 负责人 | 截止 |\n' +
+      '| 支付改版 | 已灰度 20% | 张三 | 11/24 |\n' +
+      '待确认：风控接口的 SLA 没说\n' +
+      '风险：灰度回滚方案还没演练',
+    decide:
+      '【输入】要不要辞职做独立开发\n' +
+      '【输出骨架】\n' +
+      '建议：先别辞，用 3 个月验证（可逆）\n' +
+      '| 维度 | 维持现状 | 裸辞 |\n' +
+      '| 现金流 | 稳定 | 18 个月见底 |\n' +
+      '关键假设：副业 3 个月能到 5000/月（做不到则结论反转）\n' +
+      '止损线：6 个月无起色就回职场\n' +
+      '第一步：这周接 2 个付费单，先验证有人愿意付钱',
+    review:
+      '【输入】审这段产品文案\n' +
+      '【输出骨架】\n' +
+      '结论：不能直接发，有 2 处会把用户劝退\n' +
+      '| 位置 | 问题 | 严重程度 | 怎么改 |\n' +
+      '| 第 2 句 | 「颠覆行业」没有依据 | 致命 | 换成实测数字 |\n' +
+      '| 结尾 | 没有下一步动作 | 重要 | 加「点这里看价格」 |\n' +
+      '如果只改 3 处：第 2 句、结尾、标题',
+    auto:
+      '【输入】把这个想法整理成方案\n' +
+      '【输出骨架】\n' +
+      '结论：一句话说清要做什么\n' +
+      '要点：3–5 条，每条一句话\n' +
+      '待确认：还缺哪些信息，逐条列出'
+  };
+
+  /* 用户贴了自己的例子就优先用他的；否则用内置骨架 */
+  function buildExample(typeKey, userText) {
+    var body = (userText && userText.trim())
+      ? '【我手上真实的例子】\n' + userText.trim()
+      : (EXAMPLES[typeKey] || EXAMPLES.auto);
+    return '【示例｜只模仿结构与颗粒度，内容换成我自己的】\n' + body +
+           '\n\n交付时照这个骨架的密度和形状来写，事实、数字、产品名一律取自我的需求。';
+  }
+
   var UNIVERSAL_CHECKS = [
     '我是否直接回答了对方真正想要的东西，而不是他顺口提到的次要问题？',
     '有没有任何一处是我编的（数据 / 出处 / 版本 / 引文）？有就删掉或标注不确定',
@@ -555,10 +644,7 @@
       sec.selfcheck = '输出前逐条核对，任一条不通过就自己重写：\n' + fmtList(checks);
     }
     if (cfg.guard && !compact) sec.guard = (typeKey === 'writing' || typeKey === 'creative') ? GUARD_SHORT : GUARD_TEXT;
-    if (cfg.example && !compact) {
-      sec.example = '【输入示例】\n（贴一个你满意的例子）\n\n【期望输出】\n（贴对应的输出）\n\n' +
-                    '请模仿上例的判断标准和表达密度，但不要照抄具体内容。';
-    }
+    if (cfg.example && !compact) sec.example = buildExample(typeKey, cfg.exampleText);
     if (cfg.ask) {
       if (missing.length) {
         sec.ask = '我上面有 ' + missing.length + ' 处信息还没填（标了「待填写」）。\n' +
@@ -754,7 +840,8 @@
       ask: $('#optAsk').checked,
       guard: $('#optGuard').checked,
       example: $('#optExample').checked,
-      compact: $('#optCompact').checked
+      compact: $('#optCompact').checked,
+      exampleText: $('#exampleBox') ? $('#exampleBox').value : ''
     };
   }
 
@@ -781,7 +868,14 @@
       if (typeof c.guard === 'boolean') $('#optGuard').checked = c.guard;
       if (typeof c.example === 'boolean') $('#optExample').checked = c.example;
       if (typeof c.compact === 'boolean') $('#optCompact').checked = c.compact;
+      if (typeof c.exampleText === 'string' && $('#exampleBox')) $('#exampleBox').value = c.exampleText;
     } catch (err) { /* 忽略损坏数据 */ }
+  }
+
+  function syncExampleBox() {
+    var wrap = $('#exampleWrap');
+    if (!wrap) return;
+    wrap.hidden = !$('#optExample').checked;
   }
 
   function countRaw() {
@@ -867,6 +961,7 @@
     renderTemplates('');
     loadCfg();
     countRaw();
+    syncExampleBox();
 
     /* 主题 */
     var saved = null;
@@ -883,6 +978,7 @@
 
     /* ---- 事件 ---- */
     $('#raw').addEventListener('input', countRaw);
+    $('#optExample').addEventListener('change', syncExampleBox);
     $('#btnForge').addEventListener('click', doForge);
 
     $('#btnSample').addEventListener('click', function () {

@@ -131,6 +131,18 @@ textarea#raw {
 textarea#raw:focus { border-color: var(--accent); }
 textarea#raw::placeholder { color: var(--muted); opacity: .75; }
 
+.example-wrap { margin: 10px 0 2px; }
+.example-wrap textarea {
+  width: 100%; resize: vertical;
+  padding: 9px 11px;
+  background: var(--panel-2); color: var(--text);
+  border: 1px solid var(--border); border-radius: 9px;
+  font-family: var(--sans); font-size: 13px; line-height: 1.6;
+  outline: none; transition: border-color .15s;
+}
+.example-wrap textarea:focus { border-color: var(--accent); }
+.example-wrap textarea::placeholder { color: var(--muted); opacity: .7; }
+
 .field-grid {
   display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
   margin-top: 12px;

@@ -7,7 +7,7 @@
 <meta name="description" content="把粗糙的想法锻造成结构完整、约束明确、AI 命中率更高的提示词。纯前端、零依赖、可离线使用。" />
 <meta name="theme-color" content="#0e1116" />
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.95em' font-size='92'>⚒</text></svg>" />
-<link rel="stylesheet" href="assets/style.css?v=4" />
+<link rel="stylesheet" href="assets/style.css?v=5" />
 </head>
 <body>
 
@@ -66,8 +66,15 @@
       <label><input type="checkbox" id="optSelfCheck" checked /><span>加自检清单</span></label>
       <label><input type="checkbox" id="optAsk" checked /><span>让 AI 先反问</span></label>
       <label><input type="checkbox" id="optGuard" checked /><span>反编造条款</span></label>
-      <label><input type="checkbox" id="optExample" /><span>留 few-shot 示例位</span></label>
+      <label><input type="checkbox" id="optExample" checked /><span>加格式示例</span></label>
       <label><input type="checkbox" id="optCompact" /><span>精简版（更短更稳）</span></label>
+    </div>
+
+    <div class="example-wrap" id="exampleWrap" hidden>
+      <label class="field">
+        <span>手上正好有满意的一例？（选填，贴了就用你的，比内置示例准得多）</span>
+        <textarea id="exampleBox" rows="3" spellcheck="false" placeholder="输入：……&#10;输出：……"></textarea>
+      </label>
     </div>
 
     <button id="btnForge" class="primary big">
@@ -157,6 +164,6 @@
 
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-<script src="assets/app.js?v=4"></script>
+<script src="assets/app.js?v=5"></script>
 </body>
 </html>
